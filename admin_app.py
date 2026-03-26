@@ -29,7 +29,25 @@ st.markdown(f"""
         }}
     </style>
     """, unsafe_allow_html=True)
-
+# --- CLEAN UI (VERSTECKT STREAMLIT BRANDING) ---
+st.markdown("""
+    <style>
+        /* Versteckt das Streamlit-Menü (Hamburger oben rechts) */
+        #MainMenu {visibility: hidden;}
+        
+        /* Versteckt den 'Made with Streamlit' Footer ganz unten */
+        footer {visibility: hidden;}
+        
+        /* Versteckt den roten Strich oben am Rand */
+        header {visibility: hidden;}
+        
+        /* Entfernt unnötigen Platz am oberen Rand */
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 # 3. DATEN-LOGIK
 LOG_FILE = "service_log.xlsx"
 
