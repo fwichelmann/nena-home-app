@@ -1,4 +1,8 @@
 import streamlit as st
+# Spezieller Apple-Trick für das Home-Bildschirm-Icon
+st.markdown(f"""
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com">
+    """, unsafe_allow_html=True)
 import pandas as pd
 import os
 from datetime import datetime
