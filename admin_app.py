@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="auto"
 )
 
-# 2. DESIGN & BRANDING (Nena Style)
+# 2. DESIGN & BRANDING (Nena Gold Style)
 st.markdown("""
     <style>
         #MainMenu {visibility: hidden;}
@@ -28,56 +28,53 @@ st.markdown("""
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .stButton>button:hover { background-color: #2c2c2c; color: #c5a059; border: 1px solid #c5a059; }
-        
-        /* Input Fields */
-        .stTextInput>div>div>input { border-radius: 10px; height: 45px; }
+        .stBadge { background-color: #f0f2f6; padding: 5px; border-radius: 5px; }
         .block-container { padding-top: 2rem; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. DATEI-KONFIGURATION
+# 3. DATEI-PFADE & LOGIK
 LOG_FILE = "service_log.xlsx"
 USER_FILE = "apartments.xlsx"
 
-# Hilfsfunktion: Anfrage speichern
 def save_request(user_data, typ, details):
     if os.path.exists(LOG_FILE):
         df = pd.read_excel(LOG_FILE)
     else:
-        df = pd.DataFrame(columns=["Zeitstempel", "Haus", "Unit", "Typ", "Details", "Status"])
+        df = pd.DataFrame(columns=["Zeitstempel", "Haus", "Unit", "Typ", "Details", "Status", "Bearbeiter", "Erledigt_Am"])
     
     new_entry = pd.DataFrame([{
         "Zeitstempel": datetime.now().strftime("%d.%m.%Y %H:%M"),
         "Haus": user_data.get('haus', '-'),
-        "Unit": str(user_data.get('unit', '-')), # Speichert Sil-101 / Wilh-101
+        "Unit": str(user_data.get('unit', '-')),
         "Typ": typ, 
         "Details": details, 
-        "Status": "Offen"
+        "Status": "Offen",
+        "Bearbeiter": "",
+        "Erledigt_Am": ""
     }])
     updated_df = pd.concat([df, new_entry], ignore_index=True)
     updated_df.to_excel(LOG_FILE, index=False)
 
-# 4. SESSION STATE (Gedächtnis der App)
+# 4. SESSION STATE
 if "user" not in st.session_state:
     st.session_state.user = None
 
-# 5. LOGIN-BEREICH
+# 5. LOGIN-SYSTEM
 if st.session_state.user is None:
     logo_file = "nena-home-by-lesa-logo.png"
     if os.path.exists(logo_file):
         st.image(logo_file, use_container_width=True)
     
     st.title("Willkommen Zuhause")
-    email_input = st.text_input("Ihre E-Mail Adresse", placeholder="z.B. mieter@nena.de").strip().lower()
+    email_input = st.text_input("E-Mail Adresse").strip().lower()
     
     if st.button("Anmelden"):
         if os.path.exists(USER_FILE):
             df_apt = pd.read_excel(USER_FILE)
-            # Spaltennamen säubern
             df_apt.columns = [str(c).strip().lower() for c in df_apt.columns]
-            
-            # Login-Check
             mail_col = [c for c in df_apt.columns if "mail" in c]
+            
             if mail_col:
                 user_row = df_apt[df_apt[mail_col[0]].astype(str).str.lower() == email_input]
                 if not user_row.empty:
@@ -90,78 +87,111 @@ if st.session_state.user is None:
                     }
                     st.rerun()
                 else:
-                    st.error("E-Mail nicht gefunden. Bitte prüfen Sie Ihre Eingabe.")
-            else:
-                st.error("Fehler: Spalte 'mail' nicht in Excel gefunden.")
+                    st.error("E-Mail nicht gefunden.")
         else:
-            st.error(f"Datei '{USER_FILE}' nicht gefunden.")
+            st.error(f"Datei '{USER_FILE}' fehlt.")
 
 # 6. HAUPTBEREICH (Eingeloggt)
 else:
     user = st.session_state.user
-    is_admin = user.get('rolle') == 'admin'
-    
-    # Seitennavigation für Admins
-    if is_admin:
-        choice = st.sidebar.radio("Menü", ["Mieter-Ansicht", "Admin Dashboard"])
-    else:
-        choice = "Mieter-Ansicht"
+    rolle = user['rolle']
 
-    # --- SEITE: ADMIN DASHBOARD ---
-    if choice == "Admin Dashboard":
-        st.title("🛡️ Admin Dashboard")
-        st.subheader("Übersicht aller Service-Anfragen")
-        
-        if os.path.exists(LOG_FILE):
-            df_log = pd.read_excel(LOG_FILE)
-            
-            # Schnellfilter nach Haus
-            haus_filter = st.multiselect("Haus filtern:", 
-                                       options=["Silbersteinstraße", "Wilhelmstraße"],
-                                       default=["Silbersteinstraße", "Wilhelmstraße"])
-            
-            filtered_df = df_log[df_log['Haus'].isin(haus_filter)]
-            
-            # Metriken
-            c1, c2 = st.columns(2)
-            c1.metric("Anfragen", len(filtered_df))
-            c2.metric("Offen", len(filtered_df[filtered_df['Status'] == 'Offen']))
-            
-            st.dataframe(filtered_df.sort_index(ascending=False), use_container_width=True)
-            
-            # Export
-            with open(LOG_FILE, "rb") as f:
-                st.download_button("Gesamtes Log herunterladen", f, file_name="nena_log.xlsx")
-        else:
-            st.info("Noch keine Anfragen vorhanden.")
-
-    # --- SEITE: MIETER-ANSICHT ---
-    else:
-        st.title(f"Hallo {user['mieter']}!")
-        st.markdown(f"**{user['haus']}** | Apartment: **{user['unit']}**")
-        st.divider()
-
-        # Feature 1: Schaden melden
-        with st.expander("🛠️ Schaden melden"):
-            s_typ = st.selectbox("Was ist das Problem?", ["Heizung", "Licht/Strom", "Wasser", "Möbel", "Sonstiges"])
-            s_desc = st.text_area("Details zum Schaden")
-            st.camera_input("Foto aufnehmen") # Foto-Speicherung folgt im nächsten Schritt
-            
-            if st.button("Meldung jetzt absenden"):
-                save_request(user, f"Schaden: {s_typ}", s_desc)
-                st.success("Meldung wurde gespeichert. Das Office kümmert sich!")
-
-        # Feature 2: Reinigung
-        if st.button("✨ Reinigung bestellen"):
-            save_request(user, "Reinigung", "Standard Paket angefordert")
-            st.success("Reinigung erfolgreich gebucht!")
-
-        # Feature 3: Office Kontakt
-        if st.button("💬 Nachricht an das Office"):
-            st.info("Messenger-Funktion kommt in Kürze.")
-
-    # Logout Button in der Sidebar
-    st.sidebar.divider()
+    # Logout in der Sidebar
     if st.sidebar.button("Abmelden"):
         st.session_state.user = None
         st.rerun()
+
+    # --- A: ADMIN ANSICHT (Tracking & Performance) ---
+    if rolle == 'admin':
+        st.title("📊 Admin Zentrale")
+        if os.path.exists(LOG_FILE):
+            df_log = pd.read_excel(LOG_FILE)
+            
+            st.subheader("Performance-Übersicht")
+            col1, col2 = st.columns(2)
+            col1.metric("Tickets Gesamt", len(df_log))
+            col2.metric("Offen", len(df_log[df_log['Status'] != 'Erledigt']))
+            
+            st.write("Alle Vorgänge:")
+            st.dataframe(df_log.sort_index(ascending=False), use_container_width=True)
+        else:
+            st.info("Noch keine Daten vorhanden.")
+
+    # --- B: HAUSMEISTER ANSICHT (Ticket-Pool) ---
+    elif rolle == 'hausmeister':
+        st.title(f"🛠 Service-Pool: {user['haus']}")
+        st.write(f"Mitarbeiter: **{user['mieter']}**")
+        
+        if os.path.exists(LOG_FILE):
+            df_log = pd.read_excel(LOG_FILE)
+            # Filter: Nur Schäden am eigenen Standort, die nicht erledigt sind
+            mask = (df_log['Haus'] == user['haus']) & (df_log['Status'] != "Erledigt") & (df_log['Typ'].str.contains("Schaden", na=False))
+            pool = df_log[mask].copy()
+
+            if not pool.empty:
+                for idx, row in pool.iterrows():
+                    is_busy = str(row['Bearbeiter']) != "nan" and str(row['Bearbeiter']) != ""
+                    with st.expander(f"{'⏳' if is_busy else '🆕'} {row['Unit']} - {row['Typ']}"):
+                        st.write(f"**Details:** {row['Details']}")
+                        st.write(f"**Eingang:** {row['Zeitstempel']}")
+                        
+                        if is_busy:
+                            st.warning(f"In Arbeit bei: {row['Bearbeiter']}")
+                            if row['Bearbeiter'] == user['mieter']:
+                                if st.button("Erledigt ✅", key=f"done_{idx}"):
+                                    df_log.at[idx, 'Status'] = "Erledigt"
+                                    df_log.at[idx, 'Erledigt_Am'] = datetime.now().strftime("%d.%m.%Y %H:%M")
+                                    df_log.to_excel(LOG_FILE, index=False)
+                                    st.rerun()
+                        else:
+                            if st.button("Übernehmen 🚀", key=f"take_{idx}"):
+                                df_log.at[idx, 'Bearbeiter'] = user['mieter']
+                                df_log.at[idx, 'Status'] = "In Arbeit"
+                                df_log.to_excel(LOG_FILE, index=False)
+                                st.rerun()
+            else:
+                st.success("Keine offenen Reparaturen! ☕")
+
+    # --- C: REINIGUNG ANSICHT ---
+    elif rolle == 'cleaner':
+        st.title(f"✨ Reinigungs-Pool: {user['haus']}")
+        if os.path.exists(LOG_FILE):
+            df_log = pd.read_excel(LOG_FILE)
+            mask = (df_log['Haus'] == user['haus']) & (df_log['Typ'] == "Reinigung") & (df_log['Status'] != "Erledigt")
+            pool = df_log[mask]
+            
+            if not pool.empty:
+                for idx, row in pool.iterrows():
+                    with st.expander(f"🧼 Reinigung: {row['Unit']}"):
+                        st.write(f"Anfrage vom: {row['Zeitstempel']}")
+                        if st.button("Erledigt ✅", key=f"clean_{idx}"):
+                            df_log.at[idx, 'Status'] = "Erledigt"
+                            df_log.at[idx, 'Bearbeiter'] = user['mieter']
+                            df_log.at[idx, 'Erledigt_Am'] = datetime.now().strftime("%d.%m.%Y %H:%M")
+                            df_log.to_excel(LOG_FILE, index=False)
+                            st.rerun()
+            else:
+                st.success("Alle Apartments glänzen! ✨")
+
+    # --- D: MIETER ANSICHT ---
+    else:
+        st.title(f"Hallo {user['mieter']}!")
+        st.write(f"📍 **{user['haus']}** | Apartment: **{user['unit']}**")
+        st.divider()
+
+        with st.expander("🛠️ Schaden melden"):
+            s_typ = st.selectbox("Was ist defekt?", 
+                                ["Wasserschaden 💧", "Heizung defekt 🔥", "Möbel kaputt 🪑", 
+                                 "TV läuft nicht 📺", "Internet ist langsam 🌐", "Licht/Strom 💡", "Sonstiges"])
+            s_desc = st.text_area("Details zum Schaden")
+            st.camera_input("Foto aufnehmen")
+            if st.button("Meldung absenden"):
+                save_request(user, f"Schaden: {s_typ}", s_desc)
+                st.success("Der Hausmeister wurde informiert!")
+
+        if st.button("✨ Reinigung bestellen"):
+            save_request(user, "Reinigung", "Standard Paket")
+            st.success("Reinigung gebucht!")
+
+        if st.button("💬 Nachricht an Office"):
+            st.info("Funktion folgt in Kürze.")
