@@ -22,7 +22,7 @@ bg_file = "startseite.jpg" if st.session_state.user is None else "bg_default.jpg
 img_base64 = get_base64_image(bg_file)
 logo_base64 = get_base64_image("nena-home-by-lesa-logo.png")
 
-# 4. DAS FINALE LAYOUT (HEADER LINKS, SYMMETRISCHER LOGIN)
+# 4. DAS FINALE LAYOUT (TRANSPARENZ-FIX)
 st.markdown(f"""
     <style>
     /* Hintergrund-Bild Fix */
@@ -30,7 +30,15 @@ st.markdown(f"""
         background-image: url("data:image/jpg;base64,{img_base64}");
         background-size: cover; background-position: center; background-attachment: fixed;
     }}
-    [data-testid="stAppViewMain"] {{ background-color: transparent !important; }}
+    
+    /* RADIKALE TRANSPARENZ: Entfernt alle weißen Zwischenflächen */
+    [data-testid="stAppViewMain"], 
+    [data-testid="stVerticalBlock"], 
+    [data-testid="stVerticalBlockBorderWrapper"],
+    .stMainContainer {{ 
+        background-color: transparent !important; 
+        border: none !important;
+    }}
 
     /* Nena Header (140px, Logo Links) */
     .nena-header {{
@@ -47,19 +55,23 @@ st.markdown(f"""
         text-align: center; color: white;
         margin-top: 18vh; margin-bottom: 2vh;
         text-shadow: 2px 2px 15px rgba(0,0,0,0.6);
+        font-family: 'Inter', sans-serif;
     }}
-    .hero-text h1 {{ font-size: 4rem !important; font-family: 'Playfair Display', serif; margin-bottom: 0; }}
-    .hero-text p {{ font-size: 1.4rem; opacity: 0.9; margin-top: 0; }}
+    .hero-text h1 {{ font-size: 4rem !important; font-weight: 700; margin-bottom: 5px; }}
+    .hero-text p {{ font-size: 1.4rem; opacity: 0.95; font-weight: 400; }}
 
-    /* Login Balken Styling */
-    .login-bar {{
-        background-color: white;
-        padding: 40px; border-radius: 15px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-        max-width: 850px; margin: 0 auto;
+    /* Login Balken (NUR dieser Bereich ist weiß) */
+    .login-bar-container {{
+        background-color: white !important;
+        padding: 40px !important; 
+        border-radius: 15px !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4) !important;
+        max-width: 850px; 
+        margin: 0 auto !important;
+        display: block;
     }}
 
-    /* Symmetrie: Input & Button auf exakt gleicher Höhe */
+    /* Symmetrie: Input & Button */
     .stTextInput > div > div > input {{
         height: 65px !important;
         border: 1px solid #ccc !important;
@@ -67,20 +79,17 @@ st.markdown(f"""
         font-size: 1.1rem !important;
         background-color: #f9f9f9 !important;
     }}
-    
-    /* Verstecke das Label über dem Input für den cleanen Look */
     .stTextInput label {{ display: none !important; }}
 
     .stButton > button {{
         background-color: #e66b45 !important;
         color: white !important;
         border-radius: 10px !important;
-        height: 65px !important; /* Exakt wie Input */
+        height: 65px !important; 
         width: 100% !important;
         font-weight: bold !important;
         font-size: 1.2rem !important;
         border: none !important;
-        margin-top: 0px !important;
     }}
 
     /* Streamlit UI ausblenden */
@@ -98,7 +107,7 @@ st.markdown(f"""
 
 # 6. LOGIK: LOGIN ODER CONTENT
 if st.session_state.user is None:
-    # Textbereich
+    # Textbereich (Direkt auf dem Hintergrund)
     st.markdown("""
         <div class="hero-text">
             <h1>Unterwegs und doch zu Hause</h1>
@@ -106,16 +115,15 @@ if st.session_state.user is None:
         </div>
     """, unsafe_allow_html=True)
 
-    # Der symmetrische Login-Balken
-    st.markdown('<div class="login-bar">', unsafe_allow_html=True)
+    # Login-Balken (Eingebettet in ein transparentes Streamlit-Container-System)
+    st.markdown('<div class="login-bar-container">', unsafe_allow_html=True)
     
-    col1, col2 = st.columns([2, 1]) # 2 Teile Input, 1 Teil Button
+    col1, col2 = st.columns([2, 1]) # E-Mail breiter als Button
     
     with col1:
         email = st.text_input("EMAIL", placeholder="Ihre E-Mail Adresse eingeben...").strip().lower()
     
     with col2:
-        # Kein Spacer mehr nötig, da Label ausgeblendet und Höhen identisch
         if st.button("LOGIN"):
             if os.path.exists("apartments.xlsx"):
                 df = pd.read_excel("apartments.xlsx")
@@ -131,7 +139,7 @@ if st.session_state.user is None:
 
 else:
     # --- MIETER-BEREICH ---
-    st.markdown(f"<h1 style='text-align:center; color:white; margin-top:50px;'>Willkommen {st.session_state.user['mieter']}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align:center; color:white; margin-top:50px;'>Willkommen {st.session_state.user.get('mieter', '')}</h1>", unsafe_allow_html=True)
     if st.button("Abmelden"):
         st.session_state.user = None
         st.rerun()
