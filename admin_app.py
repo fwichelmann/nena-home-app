@@ -22,56 +22,59 @@ bg_file = "startseite.jpg" if st.session_state.user is None else "bg_default.jpg
 img_base64 = get_base64_image(bg_file)
 logo_base64 = get_base64_image("nena-home-by-lesa-logo.png")
 
-# 4. DAS FINALE LAYOUT (TRANSPARENZ-FIX)
+# 4. DAS FINALE LAYOUT (ENTFERNT DAS WEISSE FELD)
 st.markdown(f"""
     <style>
-    /* Hintergrund-Bild Fix */
+    /* 1. Hintergrund-Bild Fix */
     [data-testid="stAppViewContainer"] {{
         background-image: url("data:image/jpg;base64,{img_base64}");
         background-size: cover; background-position: center; background-attachment: fixed;
     }}
     
-    /* RADIKALE TRANSPARENZ: Entfernt alle weißen Zwischenflächen */
+    /* 2. RADIKALE TRANSPARENZ: Löscht ALLE weißen Flächen von Streamlit */
     [data-testid="stAppViewMain"], 
     [data-testid="stVerticalBlock"], 
     [data-testid="stVerticalBlockBorderWrapper"],
-    .stMainContainer {{ 
+    [data-testid="stColumn"],
+    .stMainContainer,
+    .stHeader {{ 
         background-color: transparent !important; 
         border: none !important;
+        box-shadow: none !important;
     }}
 
-    /* Nena Header (140px, Logo Links) */
+    /* 3. Nena Header (140px, Logo Links) */
     .nena-header {{
         position: fixed; top: 0; left: 0; width: 100%;
-        background-color: white; height: 140px;
+        background-color: white !important; height: 140px;
         display: flex; justify-content: flex-start; align-items: center;
         padding-left: 50px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 9999;
     }}
     .nena-logo-img {{ height: 100px; width: auto; }}
 
-    /* Weißer Text auf dem Bild */
+    /* 4. Weißer Text auf dem Bild */
     .hero-text {{
         text-align: center; color: white;
-        margin-top: 18vh; margin-bottom: 2vh;
-        text-shadow: 2px 2px 15px rgba(0,0,0,0.6);
+        margin-top: 15vh; margin-bottom: 2vh;
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
         font-family: 'Inter', sans-serif;
     }}
     .hero-text h1 {{ font-size: 4rem !important; font-weight: 700; margin-bottom: 5px; }}
     .hero-text p {{ font-size: 1.4rem; opacity: 0.95; font-weight: 400; }}
 
-    /* Login Balken (NUR dieser Bereich ist weiß) */
-    .login-bar-container {{
+    /* 5. Login Balken (ERZWINGT WEISS NUR HIER) */
+    .login-bar-wrapper {{
         background-color: white !important;
-        padding: 40px !important; 
+        padding: 25px 40px !important; 
         border-radius: 15px !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.4) !important;
-        max-width: 850px; 
-        margin: 0 auto !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
+        max-width: 900px; 
+        margin: 40px auto !important;
         display: block;
     }}
 
-    /* Symmetrie: Input & Button */
+    /* 6. Symmetrie: Input & Button */
     .stTextInput > div > div > input {{
         height: 65px !important;
         border: 1px solid #ccc !important;
@@ -92,7 +95,7 @@ st.markdown(f"""
         border: none !important;
     }}
 
-    /* Streamlit UI ausblenden */
+    /* Streamlit Sidebar & Header verstecken */
     section[data-testid="stSidebar"], [data-testid="stHeader"], footer {{ visibility: hidden; }}
     </style>
     <link href="https://fonts.googleapis.com" rel="stylesheet">
@@ -107,7 +110,7 @@ st.markdown(f"""
 
 # 6. LOGIK: LOGIN ODER CONTENT
 if st.session_state.user is None:
-    # Textbereich (Direkt auf dem Hintergrund)
+    # Textbereich
     st.markdown("""
         <div class="hero-text">
             <h1>Unterwegs und doch zu Hause</h1>
@@ -115,10 +118,10 @@ if st.session_state.user is None:
         </div>
     """, unsafe_allow_html=True)
 
-    # Login-Balken (Eingebettet in ein transparentes Streamlit-Container-System)
-    st.markdown('<div class="login-bar-container">', unsafe_allow_html=True)
+    # Der saubere Login-Balken
+    st.markdown('<div class="login-bar-wrapper">', unsafe_allow_html=True)
     
-    col1, col2 = st.columns([2, 1]) # E-Mail breiter als Button
+    col1, col2 = st.columns([3, 1]) # E-Mail breiter als Button
     
     with col1:
         email = st.text_input("EMAIL", placeholder="Ihre E-Mail Adresse eingeben...").strip().lower()
@@ -136,10 +139,3 @@ if st.session_state.user is None:
                     st.error("E-Mail unbekannt.")
     
     st.markdown('</div>', unsafe_allow_html=True)
-
-else:
-    # --- MIETER-BEREICH ---
-    st.markdown(f"<h1 style='text-align:center; color:white; margin-top:50px;'>Willkommen {st.session_state.user.get('mieter', '')}</h1>", unsafe_allow_html=True)
-    if st.button("Abmelden"):
-        st.session_state.user = None
-        st.rerun()
