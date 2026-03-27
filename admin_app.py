@@ -22,7 +22,7 @@ bg_file = "startseite.jpg" if st.session_state.user is None else "bg_default.jpg
 img_base64 = get_base64_image(bg_file)
 logo_base64 = get_base64_image("nena-home-by-lesa-logo.png")
 
-# 4. DAS NEUE LAYOUT (WEISSER BALKEN & WEISSER TEXT)
+# 4. DAS FINALE LAYOUT (HEADER LINKS, SYMMETRISCHER LOGIN)
 st.markdown(f"""
     <style>
     /* Hintergrund-Bild Fix */
@@ -32,71 +32,73 @@ st.markdown(f"""
     }}
     [data-testid="stAppViewMain"] {{ background-color: transparent !important; }}
 
-    /* Nena Header */
+    /* Nena Header (140px, Logo Links) */
     .nena-header {{
         position: fixed; top: 0; left: 0; width: 100%;
         background-color: white; height: 140px;
-        display: flex; justify-content: center; align-items: center;
+        display: flex; justify-content: flex-start; align-items: center;
+        padding-left: 50px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 9999;
     }}
     .nena-logo-img {{ height: 100px; width: auto; }}
 
     /* Weißer Text auf dem Bild */
     .hero-text {{
-        text-align: center;
-        color: white;
-        margin-top: 15vh;
-        margin-bottom: 5vh;
+        text-align: center; color: white;
+        margin-top: 18vh; margin-bottom: 2vh;
         text-shadow: 2px 2px 15px rgba(0,0,0,0.6);
     }}
-    .hero-text h1 {{ font-size: 4.5rem !important; font-family: 'Playfair Display', serif; letter-spacing: 2px; }}
-    .hero-text p {{ font-size: 1.5rem; opacity: 0.9; font-weight: 300; }}
+    .hero-text h1 {{ font-size: 4rem !important; font-family: 'Playfair Display', serif; margin-bottom: 0; }}
+    .hero-text p {{ font-size: 1.4rem; opacity: 0.9; margin-top: 0; }}
 
-    /* Login Balken (Der weiße Kasten unten) */
+    /* Login Balken Styling */
     .login-bar {{
         background-color: white;
-        padding: 30px 50px;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        max-width: 1000px;
-        margin: 0 auto;
+        padding: 40px; border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        max-width: 850px; margin: 0 auto;
     }}
 
-    /* Input-Styling für den Balken-Look */
-    div[data-testid="stForm"] {{ border: none !important; padding: 0 !important; }}
-    
-    .stTextInput input {{
-        border: none !important;
-        border-bottom: 2px solid #eee !important;
-        border-radius: 0px !important;
+    /* Symmetrie: Input & Button auf exakt gleicher Höhe */
+    .stTextInput > div > div > input {{
+        height: 65px !important;
+        border: 1px solid #ccc !important;
+        border-radius: 10px !important;
         font-size: 1.1rem !important;
+        background-color: #f9f9f9 !important;
     }}
+    
+    /* Verstecke das Label über dem Input für den cleanen Look */
+    .stTextInput label {{ display: none !important; }}
 
-    .stButton>button {{
-        background-color: #e66b45 !important; /* Das Orange aus dem "Suche" Button */
+    .stButton > button {{
+        background-color: #e66b45 !important;
         color: white !important;
         border-radius: 10px !important;
-        height: 60px !important;
+        height: 65px !important; /* Exakt wie Input */
+        width: 100% !important;
         font-weight: bold !important;
         font-size: 1.2rem !important;
         border: none !important;
+        margin-top: 0px !important;
     }}
 
+    /* Streamlit UI ausblenden */
     section[data-testid="stSidebar"], [data-testid="stHeader"], footer {{ visibility: hidden; }}
     </style>
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     """, unsafe_allow_html=True)
 
-# 5. HEADER
+# 5. HEADER (Logo Links)
 st.markdown(f"""
     <div class="nena-header">
         <img src="data:image/png;base64,{logo_base64}" class="nena-logo-img">
     </div>
 """, unsafe_allow_html=True)
 
-# 6. LOGIN LOGIK
+# 6. LOGIK: LOGIN ODER CONTENT
 if st.session_state.user is None:
-    # Weißer Text im Hero-Bereich
+    # Textbereich
     st.markdown("""
         <div class="hero-text">
             <h1>Unterwegs und doch zu Hause</h1>
@@ -104,17 +106,16 @@ if st.session_state.user is None:
         </div>
     """, unsafe_allow_html=True)
 
-    # Der weiße Balken (Login-Bereich)
+    # Der symmetrische Login-Balken
     st.markdown('<div class="login-bar">', unsafe_allow_html=True)
     
-    # Grid für E-Mail und Button nebeneinander
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([2, 1]) # 2 Teile Input, 1 Teil Button
     
     with col1:
-        email = st.text_input("IHRE E-MAIL ADRESSE", placeholder="name@beispiel.de").strip().lower()
+        email = st.text_input("EMAIL", placeholder="Ihre E-Mail Adresse eingeben...").strip().lower()
     
     with col2:
-        st.write("<div style='height: 28px;'></div>", unsafe_allow_html=True) # Spacer
+        # Kein Spacer mehr nötig, da Label ausgeblendet und Höhen identisch
         if st.button("LOGIN"):
             if os.path.exists("apartments.xlsx"):
                 df = pd.read_excel("apartments.xlsx")
@@ -130,7 +131,7 @@ if st.session_state.user is None:
 
 else:
     # --- MIETER-BEREICH ---
-    st.markdown(f"<h1 style='text-align:center; color:white; margin-top:50px;'>Hallo {st.session_state.user['mieter']}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align:center; color:white; margin-top:50px;'>Willkommen {st.session_state.user['mieter']}</h1>", unsafe_allow_html=True)
     if st.button("Abmelden"):
         st.session_state.user = None
         st.rerun()
