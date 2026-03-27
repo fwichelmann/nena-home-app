@@ -22,7 +22,7 @@ bg_file = "startseite.jpg" if st.session_state.user is None else "bg_default.jpg
 img_base64 = get_base64_image(bg_file)
 logo_base64 = get_base64_image("nena-home-by-lesa-logo.png")
 
-# 4. DAS RADIKALE CSS (ENTFERNT ALLE ZWISCHENRÄUME)
+# 4. DAS RADIKALE CSS (STABIL & SYMMETRISCH)
 st.markdown(f"""
     <style>
     /* Hintergrund-Bild */
@@ -37,7 +37,7 @@ st.markdown(f"""
     [data-testid="stColumn"] {{ 
         background-color: transparent !important; 
         border: none !important;
-        gap: 0rem !important; /* Entfernt den Spalt zwischen Elementen */
+        gap: 0rem !important;
         padding: 0 !important;
     }}
 
@@ -54,7 +54,7 @@ st.markdown(f"""
     /* Hero Text Bereich */
     .hero-container {{
         text-align: center; color: white;
-        margin-top: 25vh; /* Tieferer Start */
+        margin-top: 25vh;
         font-family: 'Inter', sans-serif;
     }}
     .hero-container h1 {{ 
@@ -66,10 +66,10 @@ st.markdown(f"""
         text-shadow: 1px 1px 5px rgba(0,0,0,0.8);
     }}
 
-    /* DER WEISSE LOGIN-BALKEN (Kompakt & Symmetrisch) */
+    /* DER WEISSE LOGIN-BALKEN */
     .login-bar {{
         background-color: white !important;
-        padding: 10px 10px 10px 30px !important; /* Weniger Padding oben/unten */
+        padding: 10px 10px 10px 30px !important;
         border-radius: 15px;
         max-width: 900px;
         margin: 0 auto !important;
@@ -82,7 +82,7 @@ st.markdown(f"""
     .stTextInput {{ width: 100% !important; }}
     .stTextInput > div > div > input {{
         height: 65px !important;
-        border: none !important; /* Kein Rand im weißen Balken */
+        border: none !important;
         font-size: 1.2rem !important;
         background-color: transparent !important;
     }}
@@ -90,7 +90,7 @@ st.markdown(f"""
 
     /* Login Button Styling */
     .stButton > button {{
-        background-color: #e66b45 !important; /* Suche-Orange */
+        background-color: #e66b45 !important;
         color: white !important;
         border-radius: 10px !important;
         height: 65px !important; 
@@ -100,7 +100,6 @@ st.markdown(f"""
         border: none !important;
     }}
 
-    /* Streamlit UI ausblenden */
     section[data-testid="stSidebar"], [data-testid="stHeader"], footer {{ visibility: hidden; }}
     </style>
     <link href="https://fonts.googleapis.com" rel="stylesheet">
@@ -115,7 +114,6 @@ st.markdown(f"""
 
 # 6. LOGIK: LOGIN ODER CONTENT
 if st.session_state.user is None:
-    # Textbereich
     st.markdown("""
         <div class="hero-container">
             <h1>Unterwegs und doch zu Hause</h1>
@@ -123,26 +121,33 @@ if st.session_state.user is None:
         </div>
     """, unsafe_allow_html=True)
 
-    # Login-Balken (Ein einziger Container verhindert Geister-Elemente)
-    # Wir bündeln alles in einem HTML-Block
     with st.container():
+        # HTML-Beginn für den weißen Balken
         st.markdown('<div class="login-bar">', unsafe_allow_html=True)
-        # E-Mail Feld
+        
+        # E-Mail Eingabe
         email = st.text_input("MAIL", placeholder="Ihre E-Mail Adresse eingeben...", label_visibility="collapsed").strip().lower()
+        
         # Login Button
         if st.button("LOGIN"):
             if os.path.exists("apartments.xlsx"):
                 df = pd.read_excel("apartments.xlsx")
                 df.columns = [str(c).strip().lower() for c in df.columns]
-                user = df[df['mail'].astype(str).str.lower() == email]
-                if not user.empty:
-                    st.session_state.user = user.iloc.to_dict()
+                user_match = df[df['mail'].astype(str).str.lower() == email]
+                
+                if not user_match.empty:
+                    # FIX: iloc[0] statt iloc.to_dict()
+                    st.session_state.user = user_match.iloc[0].to_dict()
                     st.rerun()
-                else: st.error("Email unbekannt.")
+                else:
+                    st.error("E-Mail unbekannt.")
+            else:
+                st.error("Datei 'apartments.xlsx' fehlt.")
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # Mieter-Bereich
+    # --- EINGELOGGT: MIETER-BEREICH ---
     st.markdown(f"<h1 style='text-align:center; color:white; margin-top:50px;'>Willkommen {st.session_state.user.get('mieter', '')}</h1>", unsafe_allow_html=True)
     if st.button("Abmelden"):
         st.session_state.user = None
