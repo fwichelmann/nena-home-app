@@ -1,84 +1,69 @@
 import streamlit as st
 import pandas as pd
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
 # 1. APP-KONFIGURATION
 st.set_page_config(page_title="Nena Home", page_icon="app-icon.png", layout="centered")
 
-# Hintergrundbild-URL (Hier kannst du ein Bild von der Nena-Website oder ein eigenes nutzen)
-BG_IMAGE_URL = "https://www.nena-apartments.de"
+# BILDER-DATENBANK (Direkt von der Nena-Website)
+BG_IMAGES = {
+    "Wilhelmstraße": "https://www.nena-apartments.de",
+    "Silbersteinstraße": "https://www.nena-apartments.de",
+    "Default": "https://www.nena-apartments.de"
+}
 
-# 2. VISUELLES DESIGN (Custom CSS für Ken-Burns & Nena Style)
+# 2. SESSION STATE
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+# Hintergrund-Logik: Welches Bild soll gezeigt werden?
+current_bg = BG_IMAGES["Default"]
+if st.session_state.user:
+    haus = st.session_state.user.get('haus', 'Default')
+    current_bg = BG_IMAGES.get(haus, BG_IMAGES["Default"])
+
+# 3. VISUELLES DESIGN (Ken-Burns & Responsive UI)
 st.markdown(f"""
     <style>
-        /* Ken-Burns Hintergrund Animation */
-        .stApp {{
-            background: none;
-        }}
-        
+        /* Ken-Burns Effekt im Hintergrund */
+        .stApp {{ background: none; }}
         .stApp::before {{
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            background-image: url("{BG_IMAGE_URL}");
-            background-size: cover;
-            background-position: center;
-            animation: kenburns 20s infinite alternate ease-in-out;
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background-image: url("{current_bg}");
+            background-size: cover; background-position: center;
+            animation: kenburns 25s infinite alternate ease-in-out;
         }}
-
         @keyframes kenburns {{
             0% {{ transform: scale(1); }}
-            100% {{ transform: scale(1.15); }}
+            100% {{ transform: scale(1.18); }}
         }}
-
-        /* Overlay für bessere Lesbarkeit */
+        /* Overlay für bessere Lesbarkeit auf dem iPhone */
         .stApp::after {{
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            background: rgba(255, 255, 255, 0.75); /* Helles Overlay wie auf der Website */
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: rgba(255, 255, 255, 0.7); 
         }}
-
-        /* Content Container Styling */
+        /* Card Design für den Content */
         .block-container {{
-            background: rgba(255, 255, 255, 0.9);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem; border-radius: 0px; /* Eckig wie auf der Website */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            margin-top: 10vh;
         }}
-
-        /* Nena Schriften & Farben */
-        h1, h2, h3 {{ 
-            font-family: 'Playfair Display', serif; 
-            color: #2c2c2c; 
-            letter-spacing: 1px;
-        }}
-        
+        /* Nena Typography & Buttons */
+        h1, h2 {{ font-family: 'Playfair Display', serif; color: #2c2c2c; text-transform: uppercase; letter-spacing: 2px; }}
         .stButton>button {{ 
-            height: 60px; border-radius: 0px; /* Eckig wie das Nena-Branding */
-            background-color: #c5a059; color: white; border: none;
-            font-weight: 400; text-transform: uppercase; letter-spacing: 2px;
-            transition: all 0.4s;
+            height: 65px; border-radius: 0px; background-color: #c5a059; color: white; border: none;
+            font-weight: 400; text-transform: uppercase; letter-spacing: 2px; transition: 0.4s;
         }}
-        
-        .stButton>button:hover {{ 
-            background-color: #2c2c2c; color: #c5a059;
-        }}
+        .stButton>button:hover {{ background-color: #2c2c2c; color: #c5a059; }}
     </style>
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     """, unsafe_allow_html=True)
 
-# 3. DATEI-LOGIK
+# 4. DATEI-LOGIK
 LOG_FILE = "service_log.xlsx"
 USER_FILE = "apartments.xlsx"
-
 if not os.path.exists("temp_pics"): os.makedirs("temp_pics")
 
 def save_request(user_data, typ, details, termin="Keiner", foto_path="Kein Foto"):
@@ -93,11 +78,9 @@ def save_request(user_data, typ, details, termin="Keiner", foto_path="Kein Foto"
     }])
     pd.concat([df, new_entry], ignore_index=True).to_excel(LOG_FILE, index=False)
 
-# 4. SESSION STATE & LOGIN
-if "user" not in st.session_state: st.session_state.user = None
-
+# 5. LOGIN ODER HAUPTBEREICH
 if st.session_state.user is None:
-    st.markdown("<h1 style='text-align: center;'>NENA HOME</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-size: 3rem;'>NENA HOME</h1>", unsafe_allow_html=True)
     email_input = st.text_input("E-Mail Adresse").strip().lower()
     if st.button("ANMELDEN"):
         if os.path.exists(USER_FILE):
@@ -105,43 +88,37 @@ if st.session_state.user is None:
             df_apt.columns = [str(c).strip().lower() for c in df_apt.columns]
             user_row = df_apt[df_apt['mail'].astype(str).str.lower() == email_input]
             if not user_row.empty:
-                u_data = user_row.iloc[0].to_dict()
-                st.session_state.user = {"mieter": u_data.get('mieter'), "unit": u_data.get('unit'), "haus": u_data.get('haus'), "rolle": str(u_data.get('rolle')).lower()}
+                st.session_state.user = user_row.iloc[0].to_dict()
                 st.rerun()
-        else: st.error("Systemfehler: Mieterliste fehlt.")
+        else: st.error("Login aktuell nicht möglich (Datei fehlt).")
 
-# 5. HAUPTBEREICH
 else:
     user = st.session_state.user
     if st.sidebar.button("Abmelden"):
         st.session_state.user = None
         st.rerun()
 
-    # ADMIN
-    if user['rolle'] == 'admin':
-        st.title("📊 Intelligence Dashboard")
-        if os.path.exists(LOG_FILE):
-            st.dataframe(pd.read_excel(LOG_FILE).sort_index(ascending=False), use_container_width=True)
-
-    # HAUSMEISTER
-    elif user['rolle'] == 'hausmeister':
-        st.title(f"🛠 Service-Pool: {user['haus']}")
-        # ... (Restlicher Hausmeister-Code wie zuvor)
-
-    # MIETER
+    # --- ROLLEN-LOGIK ---
+    if user.get('rolle') == 'admin':
+        st.title("📊 DASHBOARD")
+        if os.path.exists(LOG_FILE): st.dataframe(pd.read_excel(LOG_FILE), use_container_width=True)
+    
+    elif user.get('rolle') == 'hausmeister':
+        st.title(f"🛠 POOL: {user['haus']}")
+        # ... (Hausmeister Logik hier)
+    
     else:
-        st.title(f"Willkommen, {user['mieter']}")
+        st.title(f"HALLO {user['mieter'].split()[0]}")
         st.write(f"Apartment **{user['unit']}** | {user['haus']}")
         st.divider()
         
         with st.expander("🛠 SCHADEN MELDEN"):
-            s_typ = st.selectbox("Was ist defekt?", ["Wasserschaden", "Heizung", "Internet", "Licht", "Möbel"])
-            s_desc = st.text_area("Details")
-            s_termin = st.text_input("Terminwunsch")
+            s_typ = st.selectbox("Was ist defekt?", ["Wasserschaden", "Heizung", "Internet", "Licht", "Sonstiges"])
+            s_desc = st.text_area("Beschreibung")
             cam = st.camera_input("Foto")
-            if st.button("MELDUNG ABSENDEN"):
+            if st.button("ABSENDEN"):
                 path = f"temp_pics/{user['unit']}_{datetime.now().strftime('%H%M%S')}.png" if cam else "Kein Foto"
                 if cam: 
                     with open(path, "wb") as f: f.write(cam.getbuffer())
-                save_request(user, s_typ, s_desc, s_termin, path)
-                st.success("Übermittelt.")
+                save_request(user, s_typ, s_desc, "Sofort", path)
+                st.success("Meldung übermittelt.")
