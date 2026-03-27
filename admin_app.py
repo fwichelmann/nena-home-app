@@ -17,92 +17,65 @@ BG_IMAGES = {
 if "user" not in st.session_state:
     st.session_state.user = None
 
-# Hintergrund-Logik
+# Hintergrund-Logik festlegen
 current_bg = BG_IMAGES["Default"]
 if st.session_state.user:
     haus = st.session_state.user.get('haus', 'Default')
     current_bg = BG_IMAGES.get(haus, BG_IMAGES["Default"])
 
-# 3. VISUELLES DESIGN (CSS FINALE)
+# 3. VISUELLES DESIGN (STATISCHES BILD FIX)
 st.markdown(f"""
     <style>
-        /* Ken-Burns Hintergrund */
-        [data-testid="stAppViewContainer"] {{
-            background: none !important;
-        }}
-        
-        [data-testid="stAppViewContainer"]::before {{
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
+        /* Den Standard-Hintergrund von Streamlit komplett überschreiben */
+        .stAppViewContainer {{
             background-image: url("{current_bg}");
             background-size: cover;
             background-position: center;
-            animation: kenburns 30s infinite alternate ease-in-out;
+            background-attachment: fixed;
         }}
 
-        @keyframes kenburns {{
-            0% {{ transform: scale(1); }}
-            100% {{ transform: scale(1.2); }}
+        /* Overlay für Lesbarkeit hinzufügen */
+        .stAppViewMain {{
+            background-color: rgba(0, 0, 0, 0.3); /* Dunkles Overlay über das Bild */
         }}
 
-        /* Dunkleres Overlay für besseren Kontrast */
-        [data-testid="stAppViewContainer"]::after {{
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            background: rgba(0, 0, 0, 0.25); 
-        }}
-
-        /* Die weiße Card */
+        /* Die weiße Card (Inhalt) */
         .block-container {{
-            background: rgba(255, 255, 255, 0.98);
-            padding: 3.5rem !important;
-            border-radius: 0px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
-            margin-top: 8vh;
-            max-width: 500px !important;
-            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem !important;
+            border-radius: 2px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            margin-top: 10vh;
+            max-width: 480px !important;
         }}
 
-        /* Typography */
+        /* Nena Schriften */
         h1, h2, h3 {{ 
             font-family: 'Playfair Display', serif; 
             text-transform: uppercase; 
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             color: #2c2c2c;
-            margin-bottom: 0.5rem;
+            text-align: center;
         }}
         
-        p {{ font-family: 'Inter', sans-serif; color: #666; }}
-
-        /* Nena Buttons */
         .stButton>button {{ 
             height: 60px; border-radius: 0px; 
             background-color: #c5a059; color: white; border: none;
             text-transform: uppercase; letter-spacing: 2px;
             width: 100%;
-            margin-top: 10px;
-            transition: all 0.3s;
         }}
         
         .stButton>button:hover {{ background-color: #2c2c2c; color: #c5a059; }}
 
-        /* Input styling */
-        input {{ border-radius: 0px !important; border: 1px solid #ddd !important; }}
-        
-        /* Sidebar Hide */
-        [data-testid="stSidebar"] {{ display: none; }}
+        /* Sidebar verstecken für App-Look */
+        section[data-testid="stSidebar"] {{ display: none; }}
     </style>
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     """, unsafe_allow_html=True)
 
-# 4. DATEI-LOGIK & ORDNER
+# 4. DATEI-LOGIK
 LOG_FILE = "service_log.xlsx"
 USER_FILE = "apartments.xlsx"
-if not os.path.exists("temp_pics"): os.makedirs("temp_pics")
 
 def save_request(user_data, typ, details, termin="Sofort", foto_path="Kein Foto"):
     if os.path.exists(LOG_FILE): df = pd.read_excel(LOG_FILE)
@@ -112,15 +85,12 @@ def save_request(user_data, typ, details, termin="Sofort", foto_path="Kein Foto"
 
 # 5. LOGIN / HAUPTBEREICH
 if st.session_state.user is None:
-    # Logo auf der Login-Seite
     if os.path.exists("nena-home-by-lesa-logo.png"):
         st.image("nena-home-by-lesa-logo.png", use_container_width=True)
     else:
         st.markdown("<h1>NENA HOME</h1>", unsafe_allow_html=True)
     
-    st.markdown("<p>Willkommen Zuhause</p>", unsafe_allow_html=True)
     email_input = st.text_input("E-Mail Adresse").strip().lower()
-    
     if st.button("ANMELDEN"):
         if os.path.exists(USER_FILE):
             df_apt = pd.read_excel(USER_FILE)
@@ -130,36 +100,24 @@ if st.session_state.user is None:
                 st.session_state.user = user_row.iloc[0].to_dict()
                 st.rerun()
             else: st.error("E-Mail unbekannt.")
-        else: st.error("Systemfehler: Mieterliste fehlt.")
+        else: st.error("Fehler: apartments.xlsx fehlt.")
 
 else:
     user = st.session_state.user
-    
-    # Logo auch im eingeloggten Bereich oben anzeigen
     if os.path.exists("nena-home-by-lesa-logo.png"):
-        st.image("nena-home-by-lesa-logo.png", width=200)
+        st.image("nena-home-by-lesa-logo.png", width=180)
 
     st.markdown(f"<h2>HALLO {user.get('mieter', 'Gast').split()[0]}</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p>{user.get('haus', 'Berlin')} | Unit {user.get('unit', '000')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align:center;'>{user.get('haus', 'Berlin')} | Unit {user.get('unit', '000')}</p>", unsafe_allow_html=True)
     st.divider()
 
-    # --- HAUSMEISTER LOGIK ---
-    if user.get('rolle') == 'hausmeister':
-        st.subheader("Service Pool")
-        # (Hier den Pool-Code einfügen, falls nötig)
-    
-    # --- MIETER LOGIK ---
-    else:
-        with st.expander("🛠 SCHADEN MELDEN"):
-            s_typ = st.selectbox("Was ist defekt?", ["Wasserschaden", "Heizung", "Internet", "Licht", "Möbel"])
-            s_desc = st.text_area("Details zum Problem")
-            cam = st.camera_input("Foto aufnehmen")
-            if st.button("ABSENDEN"):
-                path = f"temp_pics/{user['unit']}_{datetime.now().strftime('%H%M%S')}.png" if cam else "Kein Foto"
-                if cam: 
-                    with open(path, "wb") as f: f.write(cam.getbuffer())
-                save_request(user, s_typ, s_desc, "Sofort", path)
-                st.success("Meldung wurde übermittelt.")
+    # MIETER LOGIK
+    with st.expander("🛠 SCHADEN MELDEN"):
+        s_typ = st.selectbox("Was ist defekt?", ["Wasserschaden", "Heizung", "Internet", "Licht", "Möbel"])
+        s_desc = st.text_area("Details")
+        if st.button("MELDUNG ABSENDEN"):
+            save_request(user, s_typ, s_desc)
+            st.success("Meldung übermittelt.")
 
     if st.button("ABMELDEN"):
         st.session_state.user = None
