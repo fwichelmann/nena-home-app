@@ -16,86 +16,72 @@ def get_base64_image(image_path):
 
 # 3. SESSION STATE
 if "user" not in st.session_state: st.session_state.user = None
-if "page" not in st.session_state: st.session_state.page = "home"
 
 # Hintergrund-Logik
 bg_file = "startseite.jpg" if st.session_state.user is None else "bg_default.jpg"
 img_base64 = get_base64_image(bg_file)
 logo_base64 = get_base64_image("nena-home-by-lesa-logo.png")
 
-# 4. DAS STABILE CSS (ERZWINGT WEISSE KARTE)
+# 4. DAS NEUE LAYOUT (WEISSER BALKEN & WEISSER TEXT)
 st.markdown(f"""
     <style>
     /* Hintergrund-Bild Fix */
     [data-testid="stAppViewContainer"] {{
         background-image: url("data:image/jpg;base64,{img_base64}");
-        background-size: cover; 
-        background-position: center; 
-        background-attachment: fixed;
+        background-size: cover; background-position: center; background-attachment: fixed;
     }}
     [data-testid="stAppViewMain"] {{ background-color: transparent !important; }}
 
-    /* Fixierter Weißer Header */
+    /* Nena Header */
     .nena-header {{
-        position: fixed;
-        top: 0; left: 0; width: 100%;
-        background-color: white;
-        height: 140px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        z-index: 9999;
+        position: fixed; top: 0; left: 0; width: 100%;
+        background-color: white; height: 140px;
+        display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 9999;
     }}
     .nena-logo-img {{ height: 100px; width: auto; }}
 
-    /* LOGIN-KARTE (ERZWINGT WEISSEN HINTERGRUND) */
-    .login-container {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding-top: 180px; /* Platz für Header */
+    /* Weißer Text auf dem Bild */
+    .hero-text {{
+        text-align: center;
+        color: white;
+        margin-top: 15vh;
+        margin-bottom: 5vh;
+        text-shadow: 2px 2px 15px rgba(0,0,0,0.6);
+    }}
+    .hero-text h1 {{ font-size: 4.5rem !important; font-family: 'Playfair Display', serif; letter-spacing: 2px; }}
+    .hero-text p {{ font-size: 1.5rem; opacity: 0.9; font-weight: 300; }}
+
+    /* Login Balken (Der weiße Kasten unten) */
+    .login-bar {{
+        background-color: white;
+        padding: 30px 50px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        max-width: 1000px;
+        margin: 0 auto;
     }}
 
-    /* Diese Klasse überschreibt die Streamlit-Standard-Breite */
-    div[data-testid="stVerticalBlock"] > div:has(div.login-card) {{
-        max-width: 450px !important;
-        margin: 0 auto !important;
-    }}
-
-    .login-card {{
-        background-color: rgba(255, 255, 255, 0.98) !important;
-        padding: 40px !important;
-        border-radius: 20px !important;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.4) !important;
-        text-align: center !important;
-        border: 1px solid #eee;
-    }}
-
-    .login-card h2 {{
-        font-family: 'Playfair Display', serif !important;
-        color: #c5a059 !important; /* Nena Gold */
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        margin-bottom: 30px;
-    }}
-
-    /* Eingabefelder Fix */
-    .stTextInput label {{
-        color: #2c2c2c !important; /* Dunkle Schrift für Label */
-        font-weight: bold;
+    /* Input-Styling für den Balken-Look */
+    div[data-testid="stForm"] {{ border: none !important; padding: 0 !important; }}
+    
+    .stTextInput input {{
+        border: none !important;
+        border-bottom: 2px solid #eee !important;
+        border-radius: 0px !important;
+        font-size: 1.1rem !important;
     }}
 
     .stButton>button {{
-        background-color: #c5a059 !important;
+        background-color: #e66b45 !important; /* Das Orange aus dem "Suche" Button */
         color: white !important;
-        border-radius: 5px !important;
-        height: 55px !important;
+        border-radius: 10px !important;
+        height: 60px !important;
         font-weight: bold !important;
-        margin-top: 20px;
+        font-size: 1.2rem !important;
+        border: none !important;
     }}
 
-    /* Verstecke Streamlit Elemente */
     section[data-testid="stSidebar"], [data-testid="stHeader"], footer {{ visibility: hidden; }}
     </style>
     <link href="https://fonts.googleapis.com" rel="stylesheet">
@@ -110,36 +96,40 @@ st.markdown(f"""
 
 # 6. LOGIN LOGIK
 if st.session_state.user is None:
-    # Wir nutzen ein div mit der Klasse "login-card" als Wrapper
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    # Weißer Text im Hero-Bereich
+    st.markdown("""
+        <div class="hero-text">
+            <h1>Unterwegs und doch zu Hause</h1>
+            <p>Nena Apartments by LESA – privat oder beruflich, kurz oder lang</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Der weiße Balken (Login-Bereich)
+    st.markdown('<div class="login-bar">', unsafe_allow_html=True)
     
-    # Spalten nutzen, um die Breite in der Mitte zu begrenzen
-    col_l, col_main, col_r = st.columns([1, 2, 1])
+    # Grid für E-Mail und Button nebeneinander
+    col1, col2 = st.columns([3, 1])
     
-    with col_main:
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown("<h2>Anmelden</h2>", unsafe_allow_html=True)
-        
-        # Das Login Formular
-        with st.form("login_form", clear_on_submit=False):
-            email = st.text_input("IHRE E-MAIL ADRESSE").strip().lower()
-            submit = st.form_submit_button("JETZT EINLOGGEN")
-            
-            if submit:
-                if os.path.exists("apartments.xlsx"):
-                    df = pd.read_excel("apartments.xlsx")
-                    df.columns = [str(c).strip().lower() for c in df.columns]
-                    user = df[df['mail'].astype(str).str.lower() == email]
-                    if not user.empty:
-                        st.session_state.user = user.iloc[0].to_dict()
-                        st.rerun()
-                    else:
-                        st.error("E-Mail nicht gefunden.")
-        st.markdown('</div>', unsafe_allow_html=True)
+    with col1:
+        email = st.text_input("IHRE E-MAIL ADRESSE", placeholder="name@beispiel.de").strip().lower()
+    
+    with col2:
+        st.write("<div style='height: 28px;'></div>", unsafe_allow_html=True) # Spacer
+        if st.button("LOGIN"):
+            if os.path.exists("apartments.xlsx"):
+                df = pd.read_excel("apartments.xlsx")
+                df.columns = [str(c).strip().lower() for c in df.columns]
+                user = df[df['mail'].astype(str).str.lower() == email]
+                if not user.empty:
+                    st.session_state.user = user.iloc.to_dict()
+                    st.rerun()
+                else:
+                    st.error("E-Mail unbekannt.")
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- MIETER BEREICH (Wenn eingeloggt) ---
+    # --- MIETER-BEREICH ---
     st.markdown(f"<h1 style='text-align:center; color:white; margin-top:50px;'>Hallo {st.session_state.user['mieter']}</h1>", unsafe_allow_html=True)
     if st.button("Abmelden"):
         st.session_state.user = None
