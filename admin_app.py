@@ -15,10 +15,8 @@ def get_base64_image(image_path):
     return None
 
 # 3. SESSION STATE
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "page" not in st.session_state:
-    st.session_state.page = "home"
+if "user" not in st.session_state: st.session_state.user = None
+if "page" not in st.session_state: st.session_state.page = "home"
 
 # Hintergrund-Logik
 bg_file = "bg_default.jpg"
@@ -29,7 +27,7 @@ if st.session_state.user:
 
 img_base64 = get_base64_image(bg_file)
 
-# 4. VISUELLES DESIGN (Nena Premium UI)
+# 4. VISUELLES DESIGN (LAYOUT & LOGO FIX)
 st.markdown(f"""
     <style>
     /* Hintergrund */
@@ -37,70 +35,71 @@ st.markdown(f"""
         background-image: url("data:image/jpg;base64,{img_base64 if img_base64 else ''}");
         background-size: cover; background-position: center; background-attachment: fixed;
     }}
-    [data-testid="stAppViewMain"] {{ background-color: rgba(0, 0, 0, 0.2); }}
+    [data-testid="stAppViewMain"] {{ background-color: rgba(0, 0, 0, 0.05); }}
 
     /* Content-Bereich */
-    .block-container {{
-        padding-top: 5vh !important;
-        max-width: 1000px !important;
+    .block-container {{ padding-top: 1rem !important; max-width: 1200px !important; }}
+
+    /* Obere Leiste (Logo & Logout) */
+    .top-bar {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        width: 100%;
     }}
 
-    /* Begrüßungs-Banner (Weiß hinterlegt) */
+    /* Begrüßungs-Banner */
     .welcome-banner {{
-        background: rgba(255, 255, 255, 0.9);
-        padding: 20px;
-        border-radius: 15px;
-        text-align: center;
-        margin-bottom: 5vh;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        background: rgba(255, 255, 255, 0.95);
+        padding: 40px; border-radius: 25px;
+        text-align: center; margin-top: 20px; margin-bottom: 50px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
     }}
     .welcome-banner h1 {{ 
-        font-family: 'Playfair Display', serif; 
-        color: #2c2c2c; margin: 0; text-transform: uppercase; letter-spacing: 2px;
+        font-family: 'Playfair Display', serif; color: #2c2c2c; 
+        font-size: 3.5rem; margin: 0; text-transform: uppercase; letter-spacing: 5px;
     }}
 
-    /* Die 3 Haupt-Buttons (Gleichgroß & Abgerundet) */
+    /* Die 3 Haupt-Buttons (Stabilisiertes Grid) */
     div[data-testid="stHorizontalBlock"] .stButton>button {{
-        height: 120px !important;
+        min-height: 140px !important;
         width: 100% !important;
-        border-radius: 20px !important; /* Abgerundete Ecken wie im Bild */
-        background-color: #f7e3b5 !important; /* Helleres Gold/Beige */
+        border-radius: 30px !important;
+        background-color: #f7e3b5 !important;
         color: #2c2c2c !important;
         border: none !important;
         font-family: 'Playfair Display', serif;
-        font-size: 18px !important;
-        text-transform: none !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
-        transition: transform 0.2s;
+        font-size: 22px !important;
+        line-height: 1.3 !important;
+        padding: 20px !important;
+        box-shadow: 0 12px 25px rgba(0,0,0,0.12) !important;
+        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
     }}
+    
     div[data-testid="stHorizontalBlock"] .stButton>button:hover {{
-        transform: translateY(-5px);
+        transform: translateY(-8px);
         background-color: #c5a059 !important;
         color: white !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
     }}
 
-    /* Kleiner Logout Button oben rechts */
-    .logout-container {{
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 999;
-    }}
-    .logout-container button {{
-        background: rgba(255,255,255,0.8) !important;
+    /* Spezifisches Logout Button Styling */
+    div.stButton > button[key="logout_btn"] {{
+        background-color: rgba(255,255,255,0.85) !important;
         color: #2c2c2c !important;
-        border-radius: 10px !important;
-        padding: 5px 15px !important;
-        font-size: 12px !important;
-        border: 1px solid #ddd !important;
+        border-radius: 12px !important;
+        width: 120px !important;
+        height: 45px !important;
+        font-size: 14px !important;
+        border: 1px solid #eee !important;
     }}
 
     /* Unterseiten Card */
     .content-card {{
         background: rgba(255, 255, 255, 0.98);
-        padding: 3rem;
-        border-radius: 20px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        padding: 4rem; border-radius: 25px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.3);
     }}
 
     section[data-testid="stSidebar"] {{ display: none; }}
@@ -109,89 +108,79 @@ st.markdown(f"""
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     """, unsafe_allow_html=True)
 
-# 5. DATEI-LOGIK
-LOG_FILE = "service_log.xlsx"
+# 5. LOGIK
 USER_FILE = "apartments.xlsx"
 
-def save_request(user_data, typ, details):
-    if os.path.exists(LOG_FILE): df = pd.read_excel(LOG_FILE)
-    else: df = pd.DataFrame(columns=["Zeitstempel", "Haus", "Unit", "Typ", "Details", "Status", "Bearbeiter", "Chat", "Foto", "Erledigt_Am"])
-    new_entry = pd.DataFrame([{"Zeitstempel": datetime.now().strftime("%d.%m.%Y %H:%M"), "Haus": user_data.get('haus', '-'), "Unit": str(user_data.get('unit', '-')), "Typ": typ, "Details": details, "Status": "Offen", "Bearbeiter": "", "Chat": "", "Foto": "Kein Foto", "Erledigt_Am": ""}])
-    pd.concat([df, new_entry], ignore_index=True).to_excel(LOG_FILE, index=False)
-
-# 6. LOGIN / HAUPTBEREICH
 if st.session_state.user is None:
-    # Login Bereich
-    st.markdown("<h1 style='color:white; text-align:center; margin-bottom:20px;'>NENA HOME</h1>", unsafe_allow_html=True)
-    col_l, col_m, col_r = st.columns([1,2,1])
-    with col_m:
-        st.markdown('<div class="content-card">', unsafe_allow_html=True)
-        email_input = st.text_input("E-Mail Adresse").strip().lower()
-        if st.button("Anmelden"):
-            if os.path.exists(USER_FILE):
-                df_apt = pd.read_excel(USER_FILE)
-                df_apt.columns = [str(c).strip().lower() for c in df_apt.columns]
-                user_row = df_apt[df_apt['mail'].astype(str).str.lower() == email_input]
-                if not user_row.empty:
-                    st.session_state.user = user_row.iloc[0].to_dict()
-                    st.rerun()
-                else: st.error("E-Mail unbekannt.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
+    st.markdown("<h1 style='color:white; text-align:center; margin-top:25vh; font-family:serif; letter-spacing:10px;'>NENA HOME</h1>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1,2,1])
+    with c2:
+        with st.form("login_form"):
+            mail = st.text_input("E-Mail").strip().lower()
+            if st.form_submit_button("LOGIN"):
+                if os.path.exists(USER_FILE):
+                    df = pd.read_excel(USER_FILE)
+                    df.columns = [str(c).strip().lower() for c in df.columns]
+                    user = df[df['mail'].astype(str).str.lower() == mail]
+                    if not user.empty:
+                        st.session_state.user = user.iloc[0].to_dict()
+                        st.rerun()
+                    else: st.error("E-Mail Adresse unbekannt.")
 else:
     user = st.session_state.user
     
-    # 7. LOGOUT BUTTON (OBEN RECHTS)
-    col_empty, col_logout = st.columns([10, 1])
+    # --- HEADER LEISTE (LOGO LINKS, LOGOUT RECHTS) ---
+    col_logo, col_empty, col_logout = st.columns([2, 6, 2])
+    
+    with col_logo:
+        logo_path = "nena-home-by-lesa-logo.png"
+        if os.path.exists(logo_path):
+            st.image(logo_path, width=150)
+            
     with col_logout:
-        if st.button("Logout ⮕"):
+        if st.button("Logout ⮕", key="logout_btn"):
             st.session_state.user = None
             st.session_state.page = "home"
             st.rerun()
 
-    # 8. BEGRÜSSUNG (WEISS HINTERLEGT)
+    # --- BEGRÜSSUNG ---
     st.markdown(f"""
         <div class="welcome-banner">
-            <h1>Hallo {str(user.get('mieter', 'Gast')).split()[0]}!</h1>
-            <p style="margin:0; color:#666;">{user.get('haus', 'Berlin')} | Unit {user.get('unit', '000')}</p>
+            <h1>HALLO {str(user.get('mieter', 'Gast')).split()[0]}!</h1>
+            <p style="margin-top:10px; color:#888; font-size: 1.3rem; letter-spacing:1px;">{user.get('haus', 'Berlin')} | Unit {user.get('unit', '000')}</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # 9. NAVIGATION
+    # --- HAUPTSEITE ---
     if st.session_state.page == "home":
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("Reinigung\nbuchen"):
+            if st.button("Reinigung\nbuchen", key="nav_clean"):
                 st.session_state.page = "clean"; st.rerun()
         with col2:
-            if st.button("Schaden\nmelden"):
+            if st.button("Schaden\nmelden", key="nav_repair"):
                 st.session_state.page = "repair"; st.rerun()
         with col3:
-            if st.button("Mein\nKonto"):
+            if st.button("Mein\nKonto", key="nav_acc"):
                 st.session_state.page = "account"; st.rerun()
-
-    # UNTERSEITEN
+                
+    # --- UNTERSEITEN ---
     else:
         st.markdown('<div class="content-card">', unsafe_allow_html=True)
+        if st.button("← Zurück", key="global_back"):
+            st.session_state.page = "home"; st.rerun()
+            
         if st.session_state.page == "clean":
-            st.subheader("Reinigungsservice")
-            if st.button("Kostenpflichtige Reinigung bestellen"):
-                save_request(user, "Reinigung", "Standard")
-                st.success("Erfolgreich gebucht!")
-        
+            st.subheader("Reinigung buchen")
+            st.write("Wann sollen wir Ihr Apartment reinigen?")
+            # Hier weitere Logik...
+            
         elif st.session_state.page == "repair":
             st.subheader("Schaden melden")
-            s_typ = st.selectbox("Was ist defekt?", ["Wasser", "Licht", "Heizung", "Internet", "Möbel"])
-            s_desc = st.text_area("Details")
-            if st.button("Meldung absenden"):
-                save_request(user, f"Schaden: {s_typ}", s_desc)
-                st.success("Meldung erhalten!")
-        
+            # Hier Schadens-Logik...
+            
         elif st.session_state.page == "account":
             st.subheader("Mein Mieterkonto")
-            st.write(f"Apartment: {user['unit']}")
-            st.info("Ihre Dokumente werden geladen...")
-
-        if st.button("← Zurück"):
-            st.session_state.page = "home"; st.rerun()
+            # Hier Konto-Infos...
+            
         st.markdown('</div>', unsafe_allow_html=True)
