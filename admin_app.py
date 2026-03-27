@@ -22,7 +22,7 @@ bg_file = "startseite.jpg" if st.session_state.user is None else "bg_default.jpg
 img_base64 = get_base64_image(bg_file)
 logo_base64 = get_base64_image("nena-home-by-lesa-logo.png")
 
-# 4. DAS RADIKALE CSS (KEINE STREAMLIT-SPALTEN IM LOGIN)
+# 4. DAS RADIKALE CSS (ENTFERNT ALLE ZWISCHENRÄUME)
 st.markdown(f"""
     <style>
     /* Hintergrund-Bild */
@@ -31,12 +31,14 @@ st.markdown(f"""
         background-size: cover; background-position: center; background-attachment: fixed;
     }}
     
-    /* ALLES TRANSPARENT MACHEN */
+    /* ALLES TRANSPARENT & ABSTÄNDE AUF NULL */
     [data-testid="stAppViewMain"], [data-testid="stVerticalBlock"], 
-    [data-testid="stVerticalBlockBorderWrapper"], .stMainContainer {{ 
+    [data-testid="stVerticalBlockBorderWrapper"], .stMainContainer,
+    [data-testid="stColumn"] {{ 
         background-color: transparent !important; 
         border: none !important;
-        box-shadow: none !important;
+        gap: 0rem !important; /* Entfernt den Spalt zwischen Elementen */
+        padding: 0 !important;
     }}
 
     /* Nena Header (140px, Logo Links) */
@@ -49,50 +51,53 @@ st.markdown(f"""
     }}
     .nena-logo-img {{ height: 100px; width: auto; }}
 
-    /* Hero Text */
-    .hero-text {{
+    /* Hero Text Bereich */
+    .hero-container {{
         text-align: center; color: white;
-        margin-top: 18vh; margin-bottom: 2vh;
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        margin-top: 25vh; /* Tieferer Start */
         font-family: 'Inter', sans-serif;
     }}
-    .hero-text h1 {{ font-size: 4rem !important; font-weight: 700; margin-bottom: 5px; }}
-    .hero-text p {{ font-size: 1.4rem; opacity: 0.95; font-weight: 400; }}
-
-    /* DER WEISSE LOGIN-BALKEN (Reines CSS Layout) */
-    .login-wrapper {{
-        background-color: white !important;
-        padding: 15px !important;
-        border-radius: 15px;
-        max-width: 850px;
-        margin: 40px auto !important;
-        display: flex; /* E-Mail und Button nebeneinander */
-        gap: 10px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    .hero-container h1 {{ 
+        font-size: 4.2rem !important; font-weight: 700; margin: 0; 
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+    }}
+    .hero-container p {{ 
+        font-size: 1.5rem; opacity: 0.95; margin-bottom: 40px;
+        text-shadow: 1px 1px 5px rgba(0,0,0,0.8);
     }}
 
-    /* E-Mail Input Feld Styling */
+    /* DER WEISSE LOGIN-BALKEN (Kompakt & Symmetrisch) */
+    .login-bar {{
+        background-color: white !important;
+        padding: 10px 10px 10px 30px !important; /* Weniger Padding oben/unten */
+        border-radius: 15px;
+        max-width: 900px;
+        margin: 0 auto !important;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.5);
+    }}
+
+    /* Input Feld Styling */
     .stTextInput {{ width: 100% !important; }}
     .stTextInput > div > div > input {{
         height: 65px !important;
-        border: 1px solid #eee !important;
-        border-radius: 10px !important;
-        font-size: 1.1rem !important;
-        background-color: #f9f9f9 !important;
+        border: none !important; /* Kein Rand im weißen Balken */
+        font-size: 1.2rem !important;
+        background-color: transparent !important;
     }}
     .stTextInput label {{ display: none !important; }}
 
     /* Login Button Styling */
     .stButton > button {{
-        background-color: #e66b45 !important;
+        background-color: #e66b45 !important; /* Suche-Orange */
         color: white !important;
         border-radius: 10px !important;
         height: 65px !important; 
-        min-width: 150px !important;
+        min-width: 180px !important;
         font-weight: bold !important;
-        font-size: 1.2rem !important;
+        font-size: 1.3rem !important;
         border: none !important;
-        margin: 0 !important;
     }}
 
     /* Streamlit UI ausblenden */
@@ -101,7 +106,7 @@ st.markdown(f"""
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     """, unsafe_allow_html=True)
 
-# 5. HEADER
+# 5. HEADER (Logo Links)
 st.markdown(f"""
     <div class="nena-header">
         <img src="data:image/png;base64,{logo_base64}" class="nena-logo-img">
@@ -112,18 +117,18 @@ st.markdown(f"""
 if st.session_state.user is None:
     # Textbereich
     st.markdown("""
-        <div class="hero-text">
+        <div class="hero-container">
             <h1>Unterwegs und doch zu Hause</h1>
             <p>Nena Apartments by LESA – privat oder beruflich, kurz oder lang</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Der Login-Balken ohne Streamlit-Columns (Verhindert das weiße Feld)
-    # Wir platzieren beides in einen Container
+    # Login-Balken (Ein einziger Container verhindert Geister-Elemente)
+    # Wir bündeln alles in einem HTML-Block
     with st.container():
-        st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
+        st.markdown('<div class="login-bar">', unsafe_allow_html=True)
         # E-Mail Feld
-        email = st.text_input("EMAIL", placeholder="Ihre E-Mail Adresse eingeben...", label_visibility="collapsed").strip().lower()
+        email = st.text_input("MAIL", placeholder="Ihre E-Mail Adresse eingeben...", label_visibility="collapsed").strip().lower()
         # Login Button
         if st.button("LOGIN"):
             if os.path.exists("apartments.xlsx"):
@@ -133,8 +138,7 @@ if st.session_state.user is None:
                 if not user.empty:
                     st.session_state.user = user.iloc.to_dict()
                     st.rerun()
-                else:
-                    st.error("E-Mail unbekannt.")
+                else: st.error("Email unbekannt.")
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
