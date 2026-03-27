@@ -18,9 +18,9 @@ def get_base64_image(image_path):
 if "user" not in st.session_state: st.session_state.user = None
 if "page" not in st.session_state: st.session_state.page = "home"
 
-# Hintergrund-Logik
+# Hintergrund-Logik (Korrektur auf .jpg)
 if st.session_state.user is None:
-    bg_file = "startseite.jpeg"  # Dein neues Login-Bild
+    bg_file = "startseite.jpg"  # Korrigierte Dateiendung
 else:
     haus = st.session_state.user.get('haus', '')
     if "Wilhelm" in haus: bg_file = "bg_wilhelm.jpg"
@@ -30,7 +30,7 @@ else:
 img_base64 = get_base64_image(bg_file)
 logo_base64 = get_base64_image("nena-home-by-lesa-logo.png")
 
-# 4. VISUELLES DESIGN (140px Header & Startseiten-Bild)
+# 4. VISUELLES DESIGN (140px Header & Startseite Fix)
 st.markdown(f"""
     <style>
     /* Hintergrund-Bild erzwingen */
@@ -56,7 +56,7 @@ st.markdown(f"""
     }}
     
     .nena-logo-img {{ 
-        height: 120px !important; /* Logo bleibt groß */
+        height: 120px !important; 
         width: auto;
     }}
 
@@ -66,10 +66,10 @@ st.markdown(f"""
         max-width: 1200px !important; 
     }}
 
-    /* Logout Button oben rechts im 140px Header */
+    /* Logout Button oben rechts im Header */
     button[key="logout_btn"] {{
         position: fixed !important;
-        top: 45px !important; /* Zentriert im 140px Header */
+        top: 45px !important;
         right: 50px !important;
         z-index: 10000 !important;
         background: white !important;
@@ -92,7 +92,7 @@ st.markdown(f"""
         margin: 0 auto;
     }}
 
-    /* Die 3 Haupt-Buttons */
+    /* Die 3 Haupt-Buttons im Nena Gold */
     div[data-testid="stHorizontalBlock"] .stButton>button {{
         min-height: 160px !important;
         border-radius: 35px !important;
@@ -101,6 +101,11 @@ st.markdown(f"""
         font-family: 'Playfair Display', serif;
         font-size: 24px !important;
         box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+        border: none !important;
+    }}
+    div[data-testid="stHorizontalBlock"] .stButton>button:hover {{
+        background-color: #c5a059 !important;
+        color: white !important;
     }}
 
     section[data-testid="stSidebar"] {{ display: none; }}
@@ -116,7 +121,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# 6. LOGIK: LOGIN ODER HAUPTMENÜ
+# 6. LOGIK: LOGIN ODER CONTENT
 USER_FILE = "apartments.xlsx"
 
 if st.session_state.user is None:
@@ -125,7 +130,7 @@ if st.session_state.user is None:
     st.markdown("<h2 style='font-family:serif; letter-spacing:2px;'>ANMELDEN</h2>", unsafe_allow_html=True)
     
     email = st.text_input("EMAIL ADRESSE").strip().lower()
-    if st.button("LOGIN"):
+    if st.button("LOGIN", key="login_main"):
         if os.path.exists(USER_FILE):
             df = pd.read_excel(USER_FILE)
             df.columns = [str(c).strip().lower() for c in df.columns]
@@ -146,7 +151,7 @@ else:
     # Begrüßung
     st.markdown(f"""
         <div style="background: rgba(255,255,255,0.95); padding:50px; border-radius:30px; text-align:center; margin-bottom:50px; box-shadow:0 10px 40px rgba(0,0,0,0.1);">
-            <h1 style="font-family:'Playfair Display', serif; font-size:3.5rem; margin:0; text-transform: uppercase;">HALLO {str(st.session_state.user.get('mieter')).split()[0].upper()}!</h1>
+            <h1 style="font-family:'Playfair Display', serif; font-size:3.5rem; margin:0; text-transform: uppercase;">HALLO {str(st.session_state.user.get('mieter', 'Gast')).split()[0].upper()}!</h1>
             <p style="color:#888; font-size:1.4rem;">{st.session_state.user.get('haus')} | UNIT {st.session_state.user.get('unit')}</p>
         </div>
     """, unsafe_allow_html=True)
